@@ -71,6 +71,11 @@
         v-on:editarGasto="editarGasto($event)"
       ></gastosComponente>
       <!-- lista de filtros -->
+      <div class="row lead border rounded font-weight-bold">
+        <div class="col-6">Total</div>
+        <div class="col-4">{{totalGasto}}</div>
+        <div class="col-2"></div>
+      </div>
     </div>
   </div>
   <div v-else>
@@ -92,13 +97,20 @@ export default {
       boton: "fa fa-plus",
       gastos: [],
       filtrados: [],
+      nombreGasto: "",
+      tipoGasto: "",
+      montoGasto: "",
       coleccion: {},
       logon: false,
       firebase: "",
       idUsuario: "",
       db: "",
+      totalGasto: 0.0,
       actualizar: false,
-      despliegue: false
+      despliegue: false,
+      idEditar: "",
+      montoAnt: 0.0,
+      indice: 0
     };
   },
   methods: {
@@ -123,13 +135,62 @@ export default {
         document.getElementById("actualizar").setAttribute("id", "agregar");
       }
       if (evento.target.id === "actualizar") {
-        // Actualizando los gastos
+        // Actualizando los gastos en firebase
+        var washingtonRef = this.db
+          .collection("/Usuarios/" + this.idUsuario + "/Gastos")
+          .doc(this.idEditar);
+        washingtonRef.update({
+          MontoGasto: this.montoGasto,
+          NombreGasto: this.nombreGasto,
+          TipoGasto: this.tipoGasto
+        });
+
+        // actualizando los valores de la lista
+        this.totalGasto -= this.montoAnt;
+        this.gastos[
+          this.gastos.indexOf(
+            this.gastos.find(element => element.id === this.idEditar)
+          )
+        ].nombre = this.nombreGasto;
+        this.gastos[
+          this.gastos.indexOf(
+            this.gastos.find(element => element.id === this.idEditar)
+          )
+        ].tipo = this.tipoGasto;
+        this.gastos[
+          this.gastos.indexOf(
+            this.gastos.find(element => element.id === this.idEditar)
+          )
+        ].monto = this.montoGasto;
+        this.totalGasto += parseFloat(this.montoGasto);
 
         this.despliegue = false;
         this.actualizar = false;
         this.boton = "fa fa-plus";
         document.getElementById("actualizar").setAttribute("id", "agregar");
       }
+    },
+    editarGasto: function(cambio) {
+      // Modificar gasto
+      this.actualizar = true;
+      this.despliegue = true;
+      this.boton = "fa fa-minus";
+
+      if (!document.getElementById("actualizar")) {
+        document.getElementById("agregar").setAttribute("id", "actualizar");
+      }
+      this.montoGasto = cambio.monto;
+      this.nombreGasto = cambio.nombre;
+      this.tipoGasto = cambio.tipo;
+      this.idEditar = cambio.id;
+      this.montoAnt = parseFloat(cambio.monto);
+      this.indice = parseInt(cambio.indice);
+    },
+    eliminar: function(gastoID) {
+      // Eliminar gastos
+      this.totalGasto -= parseFloat(gastoID.monto);
+      this.coleccion.doc(gastoID.id).delete();
+      this.gastos.splice(gastoID.indice, 1);
     },
     ingresoCorrecto: function(usuario) {
       console.log("User: " + usuario);
@@ -156,10 +217,10 @@ export default {
   beforeMount: function() {
     var config = {
       apiKey: " AIzaSyCMnEqx827ZNmelgPgL0gC81DhSIXBLs6s",
-      authDomain: "vue-practica-f8ec.firebaseapp.com",
+      authDomain: "vue-practica-f8ecc.firebaseapp.com",
       databaseURL: "https://vue-practica-f8ecc.firebaseio.com",
       projectId: "vue-practica-f8ecc",
-      storageBucket: "vue-practica-f8ecappspot.com",
+      storageBucket: "vue-practica-f8ecc.appspot.com",
       messagingSenderId: "310273136041"
     };
     firebase.initializeApp(config);
