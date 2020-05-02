@@ -53,6 +53,27 @@
       </div>
     </div>
     <!-- filtros -->
+    <div class="row bd-example">
+      <button
+        id="hogar"
+        type="button"
+        v-bind:class="['btn', 'btn-outline-secondary', mostrarHogar]"
+        v-on:click="filtro($event)"
+      >Hogar</button>
+      <button
+        id="trabajo"
+        type="button"
+        v-bind:class="['btn', 'btn-outline-secondary', mostrarTrabajo]"
+        v-on:click="filtro($event)"
+      >Trabajo</button>
+      <button
+        id="carros"
+        type="button"
+        v-bind:class="['btn', 'btn-outline-secondary', mostrarCarros]"
+        v-on:click="filtro($event)"
+      >Carros</button>
+    </div>
+    <!-- contenedor de la lista de gastos -->
     <div class="container border rounded text-primary mt-4">
       <div class="row lead border rounded font-weight-bold">
         <div class="col-3">Nombre del gasto</div>
@@ -63,6 +84,7 @@
       <!-- lista de los gastos -->
       <gastosComponente
         v-for="(gasto,index) in gastos"
+        v-show="filter==='filtro'"
         v-bind:gasto="gasto"
         v-bind:id="gasto.id"
         v-bind:indice="index"
@@ -71,9 +93,20 @@
         v-on:editarGasto="editarGasto($event)"
       ></gastosComponente>
       <!-- lista de filtros -->
+      <filtrosComponente
+        v-for="(gasto,index) in filtrados"
+        v-show="gasto.tipo===filter"
+        v-bind:gasto="gasto"
+        v-bind:id="gasto.id"
+        v-bind:indice="index"
+        v-bind:key="filter+index"
+        v-on:eliminarGasto="eliminar($event)"
+        v-on:editarGasto="editarGasto($event)"
+      ></filtrosComponente>
       <div class="row lead border rounded font-weight-bold">
         <div class="col-6">Total</div>
-        <div class="col-4">{{totalGasto}}</div>
+        <div v-if="filter==='filtro'" class="col-4">{{totalGasto}}</div>
+        <div v-else class="col-4">{{cantidad}}</div>
         <div class="col-2"></div>
       </div>
     </div>
@@ -89,6 +122,7 @@ import firebase from "firebase";
 import "firebase/firestore";
 import loginForm from "./components/loginForm.vue";
 import gastosComponente from "./components/GastosComponente.vue";
+import filtrosComponente from "./components/FiltrosComponente.vue";
 
 export default {
   name: "app",
@@ -110,7 +144,12 @@ export default {
       despliegue: false,
       idEditar: "",
       montoAnt: 0.0,
-      indice: 0
+      indice: 0,
+      filter: "filtro",
+      mostrarHogar: "",
+      mostrarTrabajo: "",
+      mostrarCarros: "",
+      cantidad: 0.0
     };
   },
   methods: {
@@ -125,6 +164,13 @@ export default {
         this.despliegue = false;
         this.actualizar = false;
       }
+      this.montoGasto = "";
+      this.nombreGasto = "";
+      this.tipoGasto = "";
+      this.filter = "filtro";
+      this.mostrarHogar = "";
+      this.mostrarTrabajo = "";
+      this.mostrarCarros = "";
     },
     manejarClick: function(evento) {
       if (evento.target.id === "agregar") {
@@ -150,6 +196,9 @@ export default {
               "No se pudo agregar el libro al sistema. Error: " + Errro.message
             );
           });
+        this.montoGasto = "";
+        this.nombreGasto = "";
+        this.tipoGasto = "";
         this.despliegue = false;
         this.boton = "fa fa-plus";
         document.getElementById("actualizar").setAttribute("id", "agregar");
@@ -164,6 +213,16 @@ export default {
           NombreGasto: this.nombreGasto,
           TipoGasto: this.tipoGasto
         });
+
+        // Actualizando los valores de la lista de filtro
+        console.log(this.montoAnt);
+        this.cantidad -= this.montoAnt;
+        if (this.filter !== "filtro") {
+          this.filtrados[this.indice].nombre = this.nombreGasto;
+          this.filtrados[this.indice].tipo = this.tipoGasto;
+          this.filtrados[this.indice].monto = this.montoGasto;
+          this.cantidad += parseFloat(this.montoGasto);
+        }
 
         // actualizando los valores de la lista
         this.totalGasto -= this.montoAnt;
@@ -184,10 +243,89 @@ export default {
         ].monto = this.montoGasto;
         this.totalGasto += parseFloat(this.montoGasto);
 
+        this.montoGasto = "";
+        this.nombreGasto = "";
+        this.tipoGasto = "";
         this.despliegue = false;
         this.actualizar = false;
         this.boton = "fa fa-plus";
         document.getElementById("actualizar").setAttribute("id", "agregar");
+      }
+    },
+    filtro: function(filt) {
+      // filtros segun el tipo
+      if (filt.target.id === "hogar") {
+        if (this.mostrarHogar === "active") {
+          this.mostrarHogar = "";
+          this.filter = "filtro";
+        } else {
+          this.cantidad = 0.0;
+          this.filtrados = [];
+          this.gastos.forEach(gasto => {
+            if (gasto.tipo === "Hogar") {
+              this.filtrados.push({
+                id: gasto.id,
+                monto: gasto.monto,
+                nombre: gasto.nombre,
+                tipo: gasto.tipo
+              });
+              this.cantidad += parseFloat(gasto.monto);
+            }
+          });
+          // console.log(this.filtrados + " " + this.cantidad);
+          this.mostrarHogar = "active";
+          this.mostrarTrabajo = "";
+          this.mostrarCarros = "";
+          this.filter = "Hogar";
+        }
+      } else if (filt.target.id === "trabajo") {
+        if (this.mostrarTrabajo === "active") {
+          this.mostrarTrabajo = "";
+          this.filter = "filtro";
+        } else {
+          this.cantidad = 0.0;
+          this.filtrados = [];
+          this.gastos.forEach(gasto => {
+            if (gasto.tipo === "Trabajo") {
+              this.filtrados.push({
+                id: gasto.id,
+                monto: gasto.monto,
+                nombre: gasto.nombre,
+                tipo: gasto.tipo
+              });
+              this.cantidad += parseFloat(gasto.monto);
+            }
+          });
+          // console.log(this.filtrados + " " + this.cantidad);
+          this.mostrarHogar = "";
+          this.mostrarTrabajo = "active";
+          this.mostrarCarros = "";
+          this.filter = "Trabajo";
+        }
+      } else {
+        if (this.mostrarCarros === "active") {
+          this.mostrarCarros = "";
+          this.filter = "filtro";
+        } else {
+          this.cantidad = 0.0;
+          this.filtrados = [];
+          this.gastos.forEach(gasto => {
+            if (gasto.tipo === "Carros") {
+              this.filtrados.push({
+                id: gasto.id,
+                monto: gasto.monto,
+                nombre: gasto.nombre,
+                tipo: gasto.tipo
+              });
+              this.cantidad += parseFloat(gasto.monto);
+            }
+          });
+          // console.log(this.filtrados + " " + this.cantidad);
+          this.mostrarHogar = "";
+          this.mostrarTrabajo = "";
+          this.mostrarCarros = "active";
+          this.filter = "Carros";
+        }
       }
     },
     editarGasto: function(cambio) {
@@ -208,9 +346,24 @@ export default {
     },
     eliminar: function(gastoID) {
       // Eliminar gastos
-      this.totalGasto -= parseFloat(gastoID.monto);
-      this.coleccion.doc(gastoID.id).delete();
-      this.gastos.splice(gastoID.indice, 1);
+
+      // Eliminar gastos en la lista de filtros y la lista genera que es gastos
+      if (this.filter !== "filtro") {
+        this.cantidad -= parseFloat(gastoID.monto);
+        this.totalGasto -= parseFloat(gastoID.monto);
+        this.filtrados.splice(gastoID.indice, 1);
+        this.coleccion.doc(gastoID.id).delete();
+        this.gastos.splice(
+          this.gastos.indexOf(
+            this.gastos.find(element => element.id === gastoID.id)
+          ),
+          1
+        );
+      } else {
+        this.totalGasto -= parseFloat(gastoID.monto);
+        this.coleccion.doc(gastoID.id).delete();
+        this.gastos.splice(gastoID.indice, 1);
+      }
     },
     ingresoCorrecto: function(usuario) {
       console.log("User: " + usuario);
@@ -231,8 +384,9 @@ export default {
     }
   },
   components: {
+    loginForm,
     gastosComponente,
-    loginForm
+    filtrosComponente
   },
   beforeMount: function() {
     var config = {
