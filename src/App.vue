@@ -129,7 +129,27 @@ export default {
     manejarClick: function(evento) {
       if (evento.target.id === "agregar") {
         // Se agregara los nuevos gastos
-
+        const gastoData = {
+          MontoGasto: this.montoGasto,
+          NombreGasto: this.nombreGasto,
+          TipoGasto: this.tipoGasto
+        };
+        this.totalGasto += parseFloat(this.montoGasto);
+        this.coleccion
+          .add(gastoData)
+          .then(docReference => {
+            this.gastos.unshift({
+              id: docReference.id,
+              monto: gastoData.MontoGasto,
+              nombre: gastoData.NombreGasto,
+              tipo: gastoData.TipoGasto
+            });
+          })
+          .catch(Errro => {
+            alert(
+              "No se pudo agregar el libro al sistema. Error: " + Errro.message
+            );
+          });
         this.despliegue = false;
         this.boton = "fa fa-plus";
         document.getElementById("actualizar").setAttribute("id", "agregar");
