@@ -61,6 +61,16 @@
         <div class="col-3">Accion</div>
       </div>
       <!-- lista de los gastos -->
+      <gastosComponente
+        v-for="(gasto,index) in gastos"
+        v-bind:gasto="gasto"
+        v-bind:id="gasto.id"
+        v-bind:indice="index"
+        v-bind:key="index"
+        v-on:eliminarGasto="eliminar($event)"
+        v-on:editarGasto="editarGasto($event)"
+      ></gastosComponente>
+      <!-- lista de filtros -->
     </div>
   </div>
   <div v-else>
@@ -73,6 +83,7 @@
 import firebase from "firebase";
 import "firebase/firestore";
 import loginForm from "./components/loginForm.vue";
+import gastosComponente from "./components/GastosComponente.vue";
 
 export default {
   name: "app",
@@ -139,6 +150,7 @@ export default {
     }
   },
   components: {
+    gastosComponente,
     loginForm
   },
   beforeMount: function() {
